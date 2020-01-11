@@ -1,0 +1,9 @@
+[package]
+name = "graph_in_rust_with_unsafe"
+version = "0.1.0"
+authors = ["u1roh <terada.yuichiro+github@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
