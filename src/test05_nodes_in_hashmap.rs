@@ -13,8 +13,8 @@ mod pool {
             let obj = Box::new(x);
             self.0.entry(obj.deref() as *const T).or_insert(obj)
         }
-        pub fn free(&mut self, ptr: *const T) -> bool {
-            self.0.remove(&ptr).is_some()
+        pub fn free(&mut self, ptr: *const T) -> Option<Box<T>> {
+            self.0.remove(&ptr)
         }
         pub fn get(&self, ptr: *const T) -> Option<&T> {
             self.0.get(&ptr).map(Deref::deref)
@@ -39,7 +39,7 @@ fn test_pool() {
     *pool.get_mut(p).unwrap() = 456;
     assert_eq!(pool.get(p).unwrap(), &456);
 
-    assert!(pool.free(p));
+    assert!(pool.free(p).is_some());
     assert!(pool.get(p).is_none());
 }
 
@@ -133,6 +133,19 @@ mod list {
             let next = self.sentinel.next;
             unsafe { self.insert_unsafe(next, value) }
         }
+        pub fn remove(&mut self, node: *const Node<T>) -> bool {
+            if let Some(node) = self.nodes.free(node) {
+                let next = node.next as *mut Node<T>;
+                let prev = node.prev as *mut Node<T>;
+                unsafe {
+                    (*next).prev = prev;
+                    (*prev).next = next;
+                }
+                true
+            } else {
+                false
+            }
+        }
     }
 }
 
@@ -183,7 +196,12 @@ fn test_list() {
     assert_eq!(**list.head_f().next_f().next_f(), 1);
     assert_eq!(**list.head_f().next_f().next_f().next_f(), 2);
 
+    assert!(list.remove(list.head_f() as *const _));
+    assert_eq!(**list.head_f(), 4);
+
+    /* not compilable
     let head = list.head_f();
-    //list.push_front(5);
+    list.push_front(5);
     println!("{}", **head);
+    */
 }
