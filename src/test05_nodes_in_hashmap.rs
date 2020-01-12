@@ -51,11 +51,8 @@ mod list {
         next: *mut Self,
     }
     impl<T> Node<T> {
-        pub fn try_next(&self) -> Option<&Self> {
+        pub fn next(&self) -> Option<&Self> {
             unsafe { std::mem::transmute(self.next) }
-        }
-        pub fn next(&self) -> &Self {
-            self.try_next().unwrap()
         }
     }
 
@@ -72,17 +69,11 @@ mod list {
                 tail: std::ptr::null_mut(),
             }
         }
-        pub fn try_head(&self) -> Option<&Node<T>> {
+        pub fn head(&self) -> Option<&Node<T>> {
             unsafe { std::mem::transmute(self.head) }
         }
-        pub fn try_tail(&self) -> Option<&Node<T>> {
+        pub fn tail(&self) -> Option<&Node<T>> {
             unsafe { std::mem::transmute(self.tail) }
-        }
-        pub fn head(&self) -> &Node<T> {
-            self.try_head().unwrap()
-        }
-        pub fn tail(&self) -> &Node<T> {
-            self.try_tail().unwrap()
         }
         pub fn is_empty(&self) -> bool {
             self.head.is_null()
@@ -118,27 +109,42 @@ mod list {
 
 use list::*;
 
+// テストコードから unwrap() を減らして読みやすくするためのユーティリティ
+impl<T> Node<T> {
+    fn next_f(&self) -> &Node<T> {
+        self.next().unwrap()
+    }
+}
+impl<T> List<T> {
+    fn head_f(&self) -> &Node<T> {
+        self.head().unwrap()
+    }
+    fn tail_f(&self) -> &Node<T> {
+        self.tail().unwrap()
+    }
+}
+
 #[test]
 fn test() {
     let mut list: List<usize> = List::new();
-    assert!(list.try_head().is_none());
-    assert!(list.try_tail().is_none());
+    assert!(list.head().is_none());
+    assert!(list.tail().is_none());
     assert!(list.is_empty());
 
     list.push_back(1);
-    assert!(list.try_head().is_some());
-    assert!(list.try_tail().is_some());
-    assert_eq!(list.head().value, 1);
-    assert_eq!(list.tail().value, 1);
-    assert!(list.head().try_next().is_none());
+    assert!(list.head().is_some());
+    assert!(list.tail().is_some());
+    assert_eq!(list.head_f().value, 1);
+    assert_eq!(list.tail_f().value, 1);
+    assert!(list.head_f().next().is_none());
 
     list.push_back(2);
-    assert_eq!(list.head().value, 1);
-    assert_eq!(list.tail().value, 2);
-    assert_eq!(list.head().next().value, 2);
+    assert_eq!(list.head_f().value, 1);
+    assert_eq!(list.tail_f().value, 2);
+    assert_eq!(list.head_f().next_f().value, 2);
 
-    assert!(list.insert(list.head() as *const Node<usize>, 3));
-    assert_eq!(list.head().value, 1);
-    assert_eq!(list.head().next().value, 3);
-    assert_eq!(list.head().next().next().value, 2);
+    assert!(list.insert(list.head_f() as *const Node<usize>, 3));
+    assert_eq!(list.head_f().value, 1);
+    assert_eq!(list.head_f().next_f().value, 3);
+    assert_eq!(list.head_f().next_f().next_f().value, 2);
 }

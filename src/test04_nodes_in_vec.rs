@@ -56,6 +56,21 @@ mod list {
 
 use list::*;
 
+// テストコードから unwrap() を減らして読みやすくするためのユーティリティ
+impl<T> Node<T> {
+    fn next_f(&self) -> &Node<T> {
+        self.next().unwrap()
+    }
+}
+impl<T> List<T> {
+    fn head_f(&self) -> &Node<T> {
+        self.head().unwrap()
+    }
+    fn tail_f(&self) -> &Node<T> {
+        self.tail().unwrap()
+    }
+}
+
 #[test]
 fn test() {
     let mut list: List<usize> = List::new();
@@ -66,12 +81,12 @@ fn test() {
     list.push_back(123);
     assert!(list.head().is_some());
     assert!(list.tail().is_some());
-    assert_eq!(list.head().unwrap().value, 123);
-    assert_eq!(list.tail().unwrap().value, 123);
-    assert!(list.head().unwrap().next().is_none());
+    assert_eq!(list.head_f().value, 123);
+    assert_eq!(list.tail_f().value, 123);
+    assert!(list.head_f().next().is_none());
 
     list.push_back(456);
-    assert_eq!(list.head().unwrap().value, 123);
-    assert_eq!(list.tail().unwrap().value, 456);
-    assert_eq!(list.head().unwrap().next().unwrap().value, 456);
+    assert_eq!(list.head_f().value, 123);
+    assert_eq!(list.tail_f().value, 456);
+    assert_eq!(list.head_f().next_f().value, 456);
 }
