@@ -4,14 +4,23 @@ use std::ops::Deref;
 struct Data(usize);
 
 #[test]
+fn test01_0() {
+    let obj1: Data = Data(123);
+    let ptr1 = &obj1 as *const Data;
+
+    let obj2: Data = obj1;
+    let ptr2 = &obj2 as *const Data;
+
+    assert_ne!(ptr1, ptr2);
+}
+
+#[test]
 fn test01_1() {
     let obj1: Box<Data> = Box::new(Data(123));
     let ptr1 = obj1.deref() as *const Data;
-    println!("ptr1 = {:?}", ptr1);
 
     let obj2: Box<Data> = obj1;
     let ptr2 = obj2.deref() as *const Data;
-    println!("ptr2 = {:?}", ptr2);
 
     assert_eq!(ptr1, ptr2);
     assert_eq!(unsafe { (*ptr1).0 }, 123);
