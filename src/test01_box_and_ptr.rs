@@ -4,7 +4,7 @@ use std::ops::Deref;
 struct Data(usize);
 
 #[test]
-fn box_and_ptr() {
+fn test01_1() {
     let obj1: Box<Data> = Box::new(Data(123));
     let ptr1 = obj1.deref() as *const Data;
     println!("ptr1 = {:?}", ptr1);
@@ -70,17 +70,55 @@ error[E0505]: cannot move out of `x` because it is borrowed
    |     returning this value requires that `x` is borrowed for `'a`
 */
 
-fn get_obj_and_ptr() -> (Box<Data>, *const Data) {
-    let obj: Box<Data> = Box::new(Data(123));
-    let ptr = obj.deref() as *const Data;
-    (obj, ptr)
+mod test01_2 {
+    use super::*;
+
+    fn get_obj_and_ptr() -> (Box<Data>, *const Data) {
+        let obj: Box<Data> = Box::new(Data(123));
+        let ptr = obj.deref() as *const Data;
+        (obj, ptr)
+    }
+
+    #[test]
+    fn test() {
+        let (obj, ptr) = get_obj_and_ptr();
+        assert_eq!(obj.deref() as *const Data, ptr);
+
+        let refer: &Data = unsafe { std::mem::transmute(ptr) };
+        assert_eq!(refer.0, 123);
+    }
 }
 
-#[test]
-fn test2() {
-    let (obj, ptr) = get_obj_and_ptr();
-    assert_eq!(obj.deref() as *const Data, ptr);
+mod test01_3 {
+    use super::*;
 
-    let refer: &Data = unsafe { std::mem::transmute(ptr) };
-    assert_eq!(refer.0, 123);
+    struct ObjAndPtr {
+        obj: Box<Data>,
+        ptr: *const Data,
+    }
+
+    impl ObjAndPtr {
+        fn new(value: usize) -> Self {
+            let obj: Box<Data> = Box::new(Data(value));
+            let ptr = obj.deref() as *const Data;
+            Self { obj, ptr }
+        }
+        fn ref_safe(&self) -> &Data {
+            self.obj.deref()
+        }
+        fn ref_unsafe(&self) -> &Data {
+            unsafe { std::mem::transmute(self.ptr) }
+        }
+    }
+
+    #[test]
+    fn test() {
+        let x = ObjAndPtr::new(123);
+        assert_eq!(x.ref_safe().0, 123);
+        assert_eq!(x.ref_unsafe().0, 123);
+
+        let y = x;
+        assert_eq!(y.ref_safe().0, 123);
+        assert_eq!(y.ref_unsafe().0, 123);
+    }
 }
