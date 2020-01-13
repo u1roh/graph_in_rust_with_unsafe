@@ -98,10 +98,10 @@ mod list {
             }
         }
         pub fn head(&self) -> Option<&Node<T>> {
-            Node::to_option(unsafe { std::mem::transmute(self.sentinel.next) })
+            self.sentinel.next()
         }
         pub fn tail(&self) -> Option<&Node<T>> {
-            Node::to_option(unsafe { std::mem::transmute(self.sentinel.prev) })
+            self.sentinel.prev()
         }
         pub fn is_empty(&self) -> bool {
             self.head().is_none()

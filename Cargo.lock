@@ -3,4 +3,14 @@
 [[package]]
 name = "graph_in_rust_with_unsafe"
 version = "0.1.0"
+dependencies = [
+ "mepoo 0.1.0 (git+https://github.com/u1roh/mepoo.git)",
+]
 
+[[package]]
+name = "mepoo"
+version = "0.1.0"
+source = "git+https://github.com/u1roh/mepoo.git#b2b2cb753c9bc0ba258624380c2b8bc2c062bcaf"
+
+[metadata]
+"checksum mepoo 0.1.0 (git+https://github.com/u1roh/mepoo.git)" = "<none>"
