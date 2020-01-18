@@ -6,7 +6,7 @@ mod test05_nodes_in_hashmap;
 mod test06_nodes_in_mepoo;
 
 use rand::Rng;
-const N: usize = 10000;
+const N: usize = 1000000;
 
 fn benchmark_05() {
     use test05_nodes_in_hashmap::*;
@@ -37,11 +37,32 @@ fn benchmark_05() {
 }
 
 fn benchmark_06() {
+    use mepoo::*;
     use test06_nodes_in_mepoo::*;
+    let mut random = rand::thread_rng();
     let mut list: List<usize> = List::new();
-    assert!(list.head().is_none());
-    assert!(list.tail().is_none());
-    assert!(list.is_empty());
+    for i in 0..N {
+        list.push_back(i);
+    }
+    let mut ptr: Ptr<_> = list.head().into();
+    for k in 0..N {
+        if random.gen::<i32>() % 2 == 0 {
+            if let Some(node) = list.get_ref(ptr) {
+                ptr = match random.gen::<i32>() % 2 {
+                    0 => node.next().into(),
+                    _ => node.prev().into(),
+                };
+            }
+        } else {
+            if random.gen::<i32>() % 2 == 0 {
+                list.insert(ptr, k);
+            } else if let Some(node) = list.remove(ptr) {
+                ptr = node.into();
+            } else {
+                ptr = list.head().into();
+            }
+        }
+    }
 }
 
 fn run(action: impl Fn(), caption: &str) {

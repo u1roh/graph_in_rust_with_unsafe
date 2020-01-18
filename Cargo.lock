@@ -39,7 +39,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "mepoo"
 version = "0.1.0"
-source = "git+https://github.com/u1roh/mepoo.git#b2b2cb753c9bc0ba258624380c2b8bc2c062bcaf"
+source = "git+https://github.com/u1roh/mepoo.git#e70d34c2517c2e611a178e05639a7d98023a463e"
 
 [[package]]
 name = "ppv-lite86"

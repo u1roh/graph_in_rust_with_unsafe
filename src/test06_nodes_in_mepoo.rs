@@ -8,24 +8,14 @@ mod list {
         prev: Ptr<Self>,
     }
     impl<T> Node<T> {
-        fn next_node(&self) -> Ref<Self> {
+        pub fn is_sentinel(&self) -> bool {
+            self.value.is_none()
+        }
+        pub fn next(&self) -> Ref<Self> {
             unsafe { self.next.as_ref() }.unwrap()
         }
-        fn prev_node(&self) -> Ref<Self> {
+        pub fn prev(&self) -> Ref<Self> {
             unsafe { self.prev.as_ref() }.unwrap()
-        }
-        fn to_option<'a>(node: Ref<'a, Self>) -> Option<Ref<'a, Self>> {
-            if node.value.is_some() {
-                Some(node)
-            } else {
-                None
-            }
-        }
-        pub fn next(&self) -> Option<Ref<Self>> {
-            Self::to_option(self.next_node())
-        }
-        pub fn prev(&self) -> Option<Ref<Self>> {
-            Self::to_option(self.prev_node())
         }
     }
     impl<T> Deref for Node<T> {
@@ -62,14 +52,17 @@ mod list {
         fn sentinel(&self) -> Ref<Node<T>> {
             unsafe { self.sentinel.as_ref() }.unwrap()
         }
-        pub fn head(&self) -> Option<Ref<Node<T>>> {
+        pub fn get_ref(&self, ptr: Ptr<Node<T>>) -> Option<Ref<Node<T>>> {
+            self.nodes.get(ptr)
+        }
+        pub fn head(&self) -> Ref<Node<T>> {
             self.sentinel().get().next()
         }
-        pub fn tail(&self) -> Option<Ref<Node<T>>> {
+        pub fn tail(&self) -> Ref<Node<T>> {
             self.sentinel().get().prev()
         }
         pub fn is_empty(&self) -> bool {
-            self.head().is_none()
+            self.head().is_sentinel()
         }
         unsafe fn insert_unsafe(&mut self, next: Ptr<Node<T>>, value: T) {
             let prev = next.as_ref().unwrap().prev;
@@ -82,7 +75,7 @@ mod list {
             prev.as_mut().unwrap().next = node;
         }
         pub fn insert(&mut self, pos: Ptr<Node<T>>, value: T) -> bool {
-            if self.nodes.get(&pos).is_some() {
+            if self.nodes.get(pos).is_some() {
                 unsafe { self.insert_unsafe(pos, value) }
                 true
             } else {
@@ -98,17 +91,18 @@ mod list {
                 self.insert_unsafe(next, value)
             }
         }
-        pub fn remove(&mut self, node: Ptr<Node<T>>) -> bool {
-            if let Some(node_ref) = self.nodes.get(&node) {
+        pub fn remove(&mut self, node: Ptr<Node<T>>) -> Option<Ref<Node<T>>> {
+            if let Some(node_ref) = self.nodes.get(node) {
                 let next = node_ref.next;
                 let prev = node_ref.prev;
+                assert!(self.nodes.remove(node));
                 unsafe {
                     next.as_mut().unwrap().prev = prev;
                     prev.as_mut().unwrap().next = next;
+                    next.as_ref()
                 }
-                self.nodes.remove(node)
             } else {
-                false
+                None
             }
         }
     }
@@ -117,53 +111,36 @@ mod list {
 pub use list::*;
 use mepoo::Ref;
 
-// テストコードから unwrap() を減らして読みやすくするためのユーティリティ
-impl<T> Node<T> {
-    fn next_f(&self) -> Ref<Node<T>> {
-        self.next().unwrap()
-    }
-}
-impl<T> List<T> {
-    fn head_f(&self) -> Ref<Node<T>> {
-        self.head().unwrap()
-    }
-    fn tail_f(&self) -> Ref<Node<T>> {
-        self.tail().unwrap()
-    }
-}
-
 #[test]
 fn test_list() {
     let mut list: List<usize> = List::new();
-    assert!(list.head().is_none());
-    assert!(list.tail().is_none());
+    assert!(list.head().is_sentinel());
+    assert!(list.tail().is_sentinel());
     assert!(list.is_empty());
 
     list.push_back(1);
-    assert!(list.head().is_some());
-    assert!(list.tail().is_some());
-    assert_eq!(**list.head_f(), 1);
-    assert_eq!(**list.tail_f(), 1);
-    assert!(list.head_f().next().is_none());
-    assert!(list.head_f().prev().is_none());
+    assert_eq!(**list.head(), 1);
+    assert_eq!(**list.tail(), 1);
+    assert!(list.head().next().is_sentinel());
+    assert!(list.head().prev().is_sentinel());
 
     list.push_back(2);
-    assert_eq!(**list.head_f(), 1);
-    assert_eq!(**list.tail_f(), 2);
-    assert_eq!(**list.head_f().next_f(), 2);
+    assert_eq!(**list.head(), 1);
+    assert_eq!(**list.tail(), 2);
+    assert_eq!(**list.head().next(), 2);
 
     list.push_front(3);
-    assert_eq!(**list.head_f(), 3);
-    assert_eq!(**list.head_f().next_f(), 1);
+    assert_eq!(**list.head(), 3);
+    assert_eq!(**list.head().next(), 1);
 
-    assert!(list.insert(list.head_f().next_f().into(), 4));
-    assert_eq!(**list.head_f(), 3);
-    assert_eq!(**list.head_f().next_f(), 4);
-    assert_eq!(**list.head_f().next_f().next_f(), 1);
-    assert_eq!(**list.head_f().next_f().next_f().next_f(), 2);
+    assert!(list.insert(list.head().next().into(), 4));
+    assert_eq!(**list.head(), 3);
+    assert_eq!(**list.head().next(), 4);
+    assert_eq!(**list.head().next().next(), 1);
+    assert_eq!(**list.head().next().next().next(), 2);
 
-    assert!(list.remove(list.head_f().into()));
-    assert_eq!(**list.head_f(), 4);
+    assert!(list.remove(list.head().into()).is_some());
+    assert_eq!(**list.head(), 4);
 
     // not compilable
     /*
