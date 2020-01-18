@@ -1,5 +1,3 @@
-#![cfg(test)]
-
 mod pool {
     use std::collections::HashMap;
     use std::ops::{Deref, DerefMut};
@@ -53,18 +51,14 @@ mod list {
         prev: *mut Self,
     }
     impl<T> Node<T> {
-        fn to_option(&self) -> Option<&Self> {
-            if self.value.is_some() {
-                Some(self)
-            } else {
-                None
-            }
+        pub fn is_sentinel(&self) -> bool {
+            self.value.is_none()
         }
-        pub fn next(&self) -> Option<&Self> {
-            Self::to_option(unsafe { std::mem::transmute(self.next) })
+        pub fn next(&self) -> &Self {
+            unsafe { std::mem::transmute(self.next) }
         }
-        pub fn prev(&self) -> Option<&Self> {
-            Self::to_option(unsafe { std::mem::transmute(self.prev) })
+        pub fn prev(&self) -> &Self {
+            unsafe { std::mem::transmute(self.prev) }
         }
     }
     impl<T> Deref for Node<T> {
@@ -97,14 +91,23 @@ mod list {
                 sentinel,
             }
         }
-        pub fn head(&self) -> Option<&Node<T>> {
+        pub fn sentinel(&self) -> *const Node<T> {
+            self.sentinel.deref() as *const _
+        }
+        pub fn get_ref(&self, ptr: *const Node<T>) -> Option<&Node<T>> {
+            self.nodes.get(ptr)
+        }
+        pub fn get_mut(&mut self, ptr: *const Node<T>) -> Option<&mut Node<T>> {
+            self.nodes.get_mut(ptr)
+        }
+        pub fn head(&self) -> &Node<T> {
             self.sentinel.next()
         }
-        pub fn tail(&self) -> Option<&Node<T>> {
+        pub fn tail(&self) -> &Node<T> {
             self.sentinel.prev()
         }
         pub fn is_empty(&self) -> bool {
-            self.head().is_none()
+            self.head().is_sentinel()
         }
         unsafe fn insert_unsafe(&mut self, next: *mut Node<T>, value: T) {
             let prev: *mut Node<T> = (*next).prev;
@@ -133,74 +136,57 @@ mod list {
             let next = self.sentinel.next;
             unsafe { self.insert_unsafe(next, value) }
         }
-        pub fn remove(&mut self, node: *const Node<T>) -> bool {
+        pub fn remove(&mut self, node: *const Node<T>) -> Option<&Node<T>> {
             if let Some(node) = self.nodes.free(node) {
                 let next = node.next as *mut Node<T>;
                 let prev = node.prev as *mut Node<T>;
                 unsafe {
                     (*next).prev = prev;
                     (*prev).next = next;
+                    Some(&*next)
                 }
-                true
             } else {
-                false
+                None
             }
         }
     }
 }
 
-use list::*;
-
-// テストコードから unwrap() を減らして読みやすくするためのユーティリティ
-impl<T> Node<T> {
-    fn next_f(&self) -> &Node<T> {
-        self.next().unwrap()
-    }
-}
-impl<T> List<T> {
-    fn head_f(&self) -> &Node<T> {
-        self.head().unwrap()
-    }
-    fn tail_f(&self) -> &Node<T> {
-        self.tail().unwrap()
-    }
-}
+pub use list::*;
 
 #[test]
 fn test_list() {
     let mut list: List<usize> = List::new();
-    assert!(list.head().is_none());
-    assert!(list.tail().is_none());
+    assert!(list.head().is_sentinel());
+    assert!(list.tail().is_sentinel());
     assert!(list.is_empty());
 
     list.push_back(1);
-    assert!(list.head().is_some());
-    assert!(list.tail().is_some());
-    assert_eq!(**list.head_f(), 1);
-    assert_eq!(**list.tail_f(), 1);
-    assert!(list.head_f().next().is_none());
-    assert!(list.head_f().prev().is_none());
+    assert_eq!(**list.head(), 1);
+    assert_eq!(**list.tail(), 1);
+    assert!(list.head().next().is_sentinel());
+    assert!(list.head().prev().is_sentinel());
 
     list.push_back(2);
-    assert_eq!(**list.head_f(), 1);
-    assert_eq!(**list.tail_f(), 2);
-    assert_eq!(**list.head_f().next_f(), 2);
+    assert_eq!(**list.head(), 1);
+    assert_eq!(**list.tail(), 2);
+    assert_eq!(**list.head().next(), 2);
 
     list.push_front(3);
-    assert_eq!(**list.head_f(), 3);
-    assert_eq!(**list.head_f().next_f(), 1);
+    assert_eq!(**list.head(), 3);
+    assert_eq!(**list.head().next(), 1);
 
-    assert!(list.insert(list.head_f().next_f() as *const _, 4));
-    assert_eq!(**list.head_f(), 3);
-    assert_eq!(**list.head_f().next_f(), 4);
-    assert_eq!(**list.head_f().next_f().next_f(), 1);
-    assert_eq!(**list.head_f().next_f().next_f().next_f(), 2);
+    assert!(list.insert(list.head().next() as *const _, 4));
+    assert_eq!(**list.head(), 3);
+    assert_eq!(**list.head().next(), 4);
+    assert_eq!(**list.head().next().next(), 1);
+    assert_eq!(**list.head().next().next().next(), 2);
 
-    assert!(list.remove(list.head_f() as *const _));
-    assert_eq!(**list.head_f(), 4);
+    assert!(list.remove(list.head() as *const _).is_some());
+    assert_eq!(**list.head(), 4);
 
     /* not compilable
-    let head = list.head_f();
+    let head = list.head();
     list.push_front(5);
     println!("{}", **head);
     */

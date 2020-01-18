@@ -1,5 +1,3 @@
-#![cfg(test)]
-
 mod list {
     use mepoo::{Pool, Ptr, Ref};
     use std::ops::{Deref, DerefMut};
@@ -116,7 +114,7 @@ mod list {
     }
 }
 
-use list::*;
+pub use list::*;
 use mepoo::Ref;
 
 // テストコードから unwrap() を減らして読みやすくするためのユーティリティ

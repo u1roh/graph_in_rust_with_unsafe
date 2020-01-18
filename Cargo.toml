@@ -8,3 +8,4 @@ edition = "2018"
 
 [dependencies]
 mepoo = { git = "https://github.com/u1roh/mepoo.git" }
+rand = "0.7.3"
