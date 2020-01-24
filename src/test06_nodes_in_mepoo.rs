@@ -30,6 +30,19 @@ mod list {
         }
     }
 
+    pub struct NodeMut<'a, T>(&'a mut Node<T>);
+    impl<'a, T> Deref for NodeMut<'a, T> {
+        type Target = T;
+        fn deref(&self) -> &Self::Target {
+            self.deref()
+        }
+    }
+    impl<'a, T> DerefMut for NodeMut<'a, T> {
+        fn deref_mut(&mut self) -> &mut Self::Target {
+            self.deref_mut()
+        }
+    }
+
     pub struct List<T> {
         nodes: Pool<Node<T>>,
         sentinel: Ptr<Node<T>>,
@@ -54,6 +67,12 @@ mod list {
         }
         pub fn get_ref(&self, ptr: Ptr<Node<T>>) -> Option<Ref<Node<T>>> {
             self.nodes.get(ptr)
+        }
+        pub unsafe fn get_mut_unchecked(&mut self, ptr: Ptr<Node<T>>) -> Option<&mut Node<T>> {
+            self.nodes.get_mut(ptr)
+        }
+        pub fn get_mut(&mut self, ptr: Ptr<Node<T>>) -> Option<NodeMut<T>> {
+            self.nodes.get_mut(ptr).map(NodeMut)
         }
         pub fn head(&self) -> Ref<Node<T>> {
             self.sentinel().get().next()
@@ -141,6 +160,18 @@ fn test_list() {
 
     assert!(list.remove(list.head().into()).is_some());
     assert_eq!(**list.head(), 4);
+
+    let mut node = list.get_mut(list.head().next().into()).unwrap();
+    *node = 5;
+    assert_eq!(**list.head().next(), 5);
+
+    unsafe {
+        let mut list2: List<usize> = List::new();
+        list2.push_back(6);
+        let node1 = list.get_mut_unchecked(list.head().into()).unwrap();
+        let node2 = list2.get_mut_unchecked(list2.head().into()).unwrap();
+        std::mem::swap(node1, node2); // 壊れる！
+    }
 
     // not compilable
     /*

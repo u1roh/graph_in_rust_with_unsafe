@@ -223,7 +223,7 @@ fn test_list() {
         list2.push_back(6);
         let node1 = list.get_mut_unchecked(list.head() as *const _).unwrap();
         let node2 = list2.get_mut_unchecked(list2.head() as *const _).unwrap();
-        std::mem::swap(node1, node2);
+        std::mem::swap(node1, node2); // 壊れる！
     }
 
     /* not compilable
