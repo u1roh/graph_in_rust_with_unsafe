@@ -73,6 +73,19 @@ mod list {
         }
     }
 
+    pub struct NodeMut<'a, T>(&'a mut Node<T>);
+    impl<'a, T> Deref for NodeMut<'a, T> {
+        type Target = T;
+        fn deref(&self) -> &Self::Target {
+            self.0.deref()
+        }
+    }
+    impl<'a, T> DerefMut for NodeMut<'a, T> {
+        fn deref_mut(&mut self) -> &mut Self::Target {
+            self.0.deref_mut()
+        }
+    }
+
     pub struct List<T> {
         nodes: Pool<Node<T>>,
         sentinel: Box<Node<T>>,
@@ -97,9 +110,25 @@ mod list {
         pub fn get_ref(&self, ptr: *const Node<T>) -> Option<&Node<T>> {
             self.nodes.get(ptr)
         }
-        pub fn get_mut(&mut self, ptr: *const Node<T>) -> Option<&mut Node<T>> {
+
+        // これは unsafe
+        // ```
+        //  let mut list1 = List::new();
+        //  let mut list2 = List::new();
+        //  ...
+        //  let node1 = list1.get_mut_unchecked(ptr1).unwrap();
+        //  let node2 = list2.get_mut_unchecked(ptr2).unwrap();
+        //  std::mem::swap(node1, node2);    // 壊れる！
+        // ```
+        pub unsafe fn get_mut_unchecked(&mut self, ptr: *const Node<T>) -> Option<&mut Node<T>> {
             self.nodes.get_mut(ptr)
         }
+
+        // こちらは安全に使える
+        pub fn get_mut(&mut self, ptr: *const Node<T>) -> Option<NodeMut<T>> {
+            self.nodes.get_mut(ptr).map(NodeMut)
+        }
+
         pub fn head(&self) -> &Node<T> {
             self.sentinel.next()
         }
@@ -184,6 +213,18 @@ fn test_list() {
 
     assert!(list.remove(list.head() as *const _).is_some());
     assert_eq!(**list.head(), 4);
+
+    let mut node = list.get_mut(list.head().next() as *const _).unwrap();
+    *node = 5;
+    assert_eq!(**list.head().next(), 5);
+
+    unsafe {
+        let mut list2: List<usize> = List::new();
+        list2.push_back(6);
+        let node1 = list.get_mut_unchecked(list.head() as *const _).unwrap();
+        let node2 = list2.get_mut_unchecked(list2.head() as *const _).unwrap();
+        std::mem::swap(node1, node2);
+    }
 
     /* not compilable
     let head = list.head();
