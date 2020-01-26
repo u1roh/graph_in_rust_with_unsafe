@@ -81,24 +81,23 @@ mod list {
 
     pub struct List<T> {
         nodes: Pool<Node<T>>,
-        sentinel: Box<Node<T>>,
+        sentinel: *mut Node<T>,
     }
     impl<T> List<T> {
         pub fn new() -> Self {
-            let mut sentinel = Box::new(Node::<T> {
+            let mut nodes = Pool::new();
+            let mut sentinel = nodes.alloc(Node {
                 value: None,
                 next: std::ptr::null_mut(),
                 prev: std::ptr::null_mut(),
             });
             sentinel.next = sentinel.deref_mut() as *mut Node<T>;
             sentinel.prev = sentinel.deref_mut() as *mut Node<T>;
-            Self {
-                nodes: Pool::new(),
-                sentinel,
-            }
+            let sentinel = sentinel as *mut Node<T>;
+            Self { nodes, sentinel }
         }
         pub fn sentinel(&self) -> *const Node<T> {
-            self.sentinel.deref() as *const _
+            self.sentinel
         }
         pub fn get_ref(&self, ptr: *const Node<T>) -> Option<&Node<T>> {
             self.nodes.get(ptr)
@@ -123,10 +122,10 @@ mod list {
         }
 
         pub fn head(&self) -> &Node<T> {
-            self.sentinel.next()
+            unsafe { (*self.sentinel).next() }
         }
         pub fn tail(&self) -> &Node<T> {
-            self.sentinel.prev()
+            unsafe { (*self.sentinel).prev() }
         }
         pub fn is_empty(&self) -> bool {
             self.head().is_sentinel()
@@ -151,12 +150,10 @@ mod list {
             }
         }
         pub fn push_back(&mut self, value: T) {
-            let next = self.sentinel.deref_mut() as *mut Node<T>;
-            unsafe { self.insert_unsafe(next, value) }
+            unsafe { self.insert_unsafe(self.sentinel, value) }
         }
         pub fn push_front(&mut self, value: T) {
-            let next = self.sentinel.next;
-            unsafe { self.insert_unsafe(next, value) }
+            unsafe { self.insert_unsafe((*self.sentinel).next, value) }
         }
         pub fn remove(&mut self, node: *const Node<T>) -> Option<&Node<T>> {
             if let Some(node) = self.nodes.free(node) {
@@ -221,7 +218,15 @@ fn test_list() {
 
     /* not compilable
     let head = list.head();
-    list.push_front(5);
-    println!("{}", **head);
+    list.remove(list.head());
+    println!("{}", head.value));
     */
+    {
+        let mut list = List::new();
+        list.insert(list.head(), 1); // 先頭に 1 を挿入
+        list.insert(list.sentinel(), 2); // 末尾に 2 を挿入
+        assert_eq!(*list.head().value(), 1); // 先頭の値を取得
+        assert_eq!(*list.head().next().value(), 2); // 2番目の値を取得
+        assert!(list.remove(list.head().next()).is_some()); // 2番目の要素を削除
+    }
 }
