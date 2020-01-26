@@ -55,21 +55,14 @@ mod list {
             self.value.is_none()
         }
         pub fn next(&self) -> &Self {
-            unsafe { std::mem::transmute(self.next) }
+            unsafe { &*self.next }
         }
         pub fn prev(&self) -> &Self {
-            unsafe { std::mem::transmute(self.prev) }
+            unsafe { &*self.prev }
         }
-    }
-    impl<T> Deref for Node<T> {
-        type Target = T;
-        fn deref(&self) -> &Self::Target {
+        pub fn value(&self) -> &T {
+            assert!(!self.is_sentinel());
             self.value.as_ref().unwrap()
-        }
-    }
-    impl<T> DerefMut for Node<T> {
-        fn deref_mut(&mut self) -> &mut Self::Target {
-            self.value.as_mut().unwrap()
         }
     }
 
@@ -77,12 +70,12 @@ mod list {
     impl<'a, T> Deref for NodeMut<'a, T> {
         type Target = T;
         fn deref(&self) -> &Self::Target {
-            self.0.deref()
+            self.0.value()
         }
     }
     impl<'a, T> DerefMut for NodeMut<'a, T> {
         fn deref_mut(&mut self) -> &mut Self::Target {
-            self.0.deref_mut()
+            self.0.value.as_mut().unwrap()
         }
     }
 
@@ -191,32 +184,32 @@ fn test_list() {
     assert!(list.is_empty());
 
     list.push_back(1);
-    assert_eq!(**list.head(), 1);
-    assert_eq!(**list.tail(), 1);
+    assert_eq!(*list.head().value(), 1);
+    assert_eq!(*list.tail().value(), 1);
     assert!(list.head().next().is_sentinel());
     assert!(list.head().prev().is_sentinel());
 
     list.push_back(2);
-    assert_eq!(**list.head(), 1);
-    assert_eq!(**list.tail(), 2);
-    assert_eq!(**list.head().next(), 2);
+    assert_eq!(*list.head().value(), 1);
+    assert_eq!(*list.tail().value(), 2);
+    assert_eq!(*list.head().next().value(), 2);
 
     list.push_front(3);
-    assert_eq!(**list.head(), 3);
-    assert_eq!(**list.head().next(), 1);
+    assert_eq!(*list.head().value(), 3);
+    assert_eq!(*list.head().next().value(), 1);
 
     assert!(list.insert(list.head().next() as *const _, 4));
-    assert_eq!(**list.head(), 3);
-    assert_eq!(**list.head().next(), 4);
-    assert_eq!(**list.head().next().next(), 1);
-    assert_eq!(**list.head().next().next().next(), 2);
+    assert_eq!(*list.head().value(), 3);
+    assert_eq!(*list.head().next().value(), 4);
+    assert_eq!(*list.head().next().next().value(), 1);
+    assert_eq!(*list.head().next().next().next().value(), 2);
 
     assert!(list.remove(list.head() as *const _).is_some());
-    assert_eq!(**list.head(), 4);
+    assert_eq!(*list.head().value(), 4);
 
     let mut node = list.get_mut(list.head().next() as *const _).unwrap();
     *node = 5;
-    assert_eq!(**list.head().next(), 5);
+    assert_eq!(*list.head().next().value(), 5);
 
     unsafe {
         let mut list2: List<usize> = List::new();

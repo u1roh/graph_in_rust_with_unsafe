@@ -4,6 +4,7 @@ mod test03_two_nodes_graph;
 mod test04_nodes_in_vec;
 mod test05_nodes_in_hashmap;
 mod test06_nodes_in_mepoo;
+mod test07_nodes_in_arena;
 
 use rand::Rng;
 const N: usize = 1000000;
