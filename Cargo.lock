@@ -27,6 +27,7 @@ dependencies = [
 name = "graph_in_rust_with_unsafe"
 version = "0.1.0"
 dependencies = [
+ "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "mepoo 0.1.0 (git+https://github.com/u1roh/mepoo.git)",
  "rand 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "typed-arena 2.0.1 (registry+https://github.com/rust-lang/crates.io-index)",

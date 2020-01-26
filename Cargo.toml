@@ -10,3 +10,4 @@ edition = "2018"
 mepoo = { git = "https://github.com/u1roh/mepoo.git" }
 rand = "0.7.3"
 typed-arena = "2.0.1"
+lazy_static = "1.4.0"

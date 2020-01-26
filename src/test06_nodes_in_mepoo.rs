@@ -121,7 +121,6 @@ mod list {
 }
 
 pub use list::*;
-use mepoo::Ref;
 
 #[test]
 fn test_list() {

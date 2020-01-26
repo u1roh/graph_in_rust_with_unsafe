@@ -9,6 +9,7 @@ mod not_compilable {
     }
 
     #[test]
+    #[allow(unused_mut)]
     fn test() {
         let mut node1 = Box::new(Node {
             value: 123,
@@ -187,7 +188,7 @@ fn test03_1() {
     let mut graph1 = Graph::new(1, 2);
     let mut graph2 = Graph::new(3, 4);
     *graph1.node1_mut().value_mut() = 5;
-    *graph1.node1_mut().other().value_mut() = 6;
+    *graph2.node1_mut().other().value_mut() = 6;
     //std::mem::swap(graph1.node1_mut(), graph2.node1_mut());
 
     // unable to compile
@@ -257,11 +258,11 @@ mod graph3 {
     #[test]
     fn test() {
         let arena = Arena::new();
-        let mut node1 = arena.alloc(Node {
+        let node1 = arena.alloc(Node {
             value: 1,
             other: Cell::new(None),
         });
-        let mut node2 = arena.alloc(Node {
+        let node2 = arena.alloc(Node {
             value: 2,
             other: Cell::new(None),
         });
