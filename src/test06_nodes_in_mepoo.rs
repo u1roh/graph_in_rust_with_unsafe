@@ -43,10 +43,10 @@ mod list {
     impl<T> List<T> {
         pub fn new() -> Self {
             let mut nodes = Pool::new();
-            let sentinel = nodes.insert(Node::<T> {
+            let sentinel = nodes.alloc(Node::<T> {
                 value: None,
-                next: Ptr::dangling(),
-                prev: Ptr::dangling(),
+                next: Ptr::DANGLING,
+                prev: Ptr::DANGLING,
             });
             unsafe {
                 let sentinel_mut = sentinel.as_mut().unwrap();
@@ -78,7 +78,7 @@ mod list {
         }
         unsafe fn insert_unsafe(&mut self, next: Ptr<Node<T>>, value: T) {
             let prev = next.as_ref().unwrap().prev;
-            let node = self.nodes.insert(Node {
+            let node = self.nodes.alloc(Node {
                 value: Some(value),
                 next,
                 prev,
@@ -107,7 +107,7 @@ mod list {
             if let Some(node_ref) = self.nodes.get(node) {
                 let next = node_ref.next;
                 let prev = node_ref.prev;
-                assert!(self.nodes.remove(node));
+                assert!(self.nodes.free(node));
                 unsafe {
                     next.as_mut().unwrap().prev = prev;
                     prev.as_mut().unwrap().next = next;
